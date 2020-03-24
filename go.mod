@@ -1,4 +1,4 @@
-module proxy
+module github.com/mx5566/proxy
 
 go 1.13
 
