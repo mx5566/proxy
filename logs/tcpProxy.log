@@ -1,0 +1,3 @@
+{"level":"info","time":"2020-03-23T21:57:13.074+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/log.go:61","msg":"hahahahahahaahahh","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-23T21:57:13.075+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/log.go:71","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-23T21:57:13.075+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/main.go:20","msg":"----------------","serviceName":"tcpProxy"}
