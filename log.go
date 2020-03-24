@@ -67,7 +67,3 @@ func initLog(logConfig *LogConfig) {
 	logger.Info("log 初始化成功")
 
 }
-
-func KTest() {
-
-}
