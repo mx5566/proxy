@@ -10,3 +10,5 @@
 {"level":"info","time":"2020-03-26T20:53:07.446+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
 {"level":"info","time":"2020-03-26T20:54:45.168+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
 {"level":"info","time":"2020-03-26T20:54:45.168+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T21:06:45.747+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T21:06:45.748+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
