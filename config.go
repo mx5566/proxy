@@ -32,6 +32,7 @@ type LogConfig struct {
 	ServiceName string `yaml:"servicename"`
 }
 
+// pathExists
 // 判断文件路径是不是存在
 func pathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
