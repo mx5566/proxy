@@ -1,0 +1,14 @@
+{"level":"info","time":"2020-03-23T21:57:13.074+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/log.go:61","msg":"hahahahahahaahahh","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-23T21:57:13.075+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/log.go:71","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-23T21:57:13.075+0800","linenum":"/Users/meng/Desktop/goproject/src/tcpProxy/main.go:20","msg":"----------------","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:47:57.416+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:49:58.471+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:49:58.472+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:50:42.151+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:50:42.151+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:53:07.446+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:53:07.446+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:54:45.168+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T20:54:45.168+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T21:06:45.747+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/log.go:67","msg":"log 初始化成功","serviceName":"tcpProxy"}
+{"level":"info","time":"2020-03-26T21:06:45.748+0800","linenum":"/Users/meng/Desktop/goproject/src/proxy/proxy.go:34","msg":"init proxy listen ok","serviceName":"tcpProxy"}
