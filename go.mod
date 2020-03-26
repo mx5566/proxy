@@ -5,6 +5,7 @@ go 1.13
 require (
 	go.uber.org/zap v1.14.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 	launchpad.net/goyaml v0.0.0-20140305200416-000000000051
 	stathat.com/c/consistent v1.0.0
 )

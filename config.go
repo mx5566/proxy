@@ -2,9 +2,12 @@ package proxy
 
 import (
 	"io/ioutil"
+	"os"
 
 	"launchpad.net/goyaml"
 )
+
+var config ProxyConfig
 
 // ProxyConfig Type
 type ProxyConfig struct {
@@ -29,13 +32,43 @@ type LogConfig struct {
 	ServiceName string `yaml:"servicename"`
 }
 
+// 判断文件路径是不是存在
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+// 解析配置文件
 func parseConfigFile(filepath string) error {
-	if config, err := ioutil.ReadFile(filepath); err == nil {
-		if err = goyaml.Unmarshal(config, &config); err != nil {
+	exist, err := pathExists(filepath)
+	if exist {
+		if configTemp, err := ioutil.ReadFile(filepath); err == nil {
+
+			if err = goyaml.Unmarshal(configTemp, &config); err != nil {
+				return err
+			}
+		} else {
 			return err
 		}
-	} else {
-		return err
+		return nil
 	}
-	return nil
+
+	if err == nil {
+		err := os.Mkdir(filepath, os.ModePerm)
+		if err != nil {
+			logger.Error("mkdir failed![%s]" + err.Error())
+			return err
+		} else {
+			logger.Error("mkdir success!")
+			return nil
+		}
+	}
+
+	return err
 }

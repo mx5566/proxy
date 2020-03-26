@@ -117,6 +117,7 @@ func (this *Proxy) InitBackEnd(proxyConfig *ProxyConfig) {
 		// 把对应的后端服务器加入到哈希环
 		this.pConsisthash.Add(svr)
 
+		this.backend = make(map[string]*BackendEnd)
 		this.backend[svr] = &BackendEnd{
 			svrStr:    svr,
 			isUp:      true,
@@ -143,4 +144,24 @@ func (this *Proxy) GetBackEnd(conn net.Conn) string {
 	}
 
 	return svr.svrStr
+}
+
+func CreateProxy(configPath string) {
+	//err := parseConfigFile("./config.yaml")
+	err := parseConfigFile(configPath)
+	if err != nil {
+		panic("load config file error" + err.Error())
+		return
+	}
+
+	// 日志模块
+	initLog(&config.Log)
+
+	var proxy Proxy
+	// 初始化后端服务器
+	proxy.InitBackEnd(&config)
+	// 初始化代理模块
+	proxy.InitProxy(&config)
+
+	// 需要状态检查服务器
 }
