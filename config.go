@@ -11,14 +11,25 @@ var config ProxyConfig
 
 // ProxyConfig Type
 type ProxyConfig struct {
-	Bind         string    `yaml:"bind"`
-	WaitQueueLen int       `yaml:"wait_queue_len"`
-	MaxConn      int       `yaml:"max_conn"`
-	Timeout      int       `yaml:"timeout"`
-	FailOver     int       `yaml:"failover"`
-	Backend      []string  `yaml:"backend"`
-	Log          LogConfig `yaml:"log"`
-	Stats        string    `yaml:"stats"`
+	Bind         string       `yaml:"bind"`
+	WaitQueueLen int          `yaml:"wait_queue_len"`
+	MaxConn      int          `yaml:"max_conn"`
+	Timeout      int          `yaml:"timeout"`
+	FailOver     int          `yaml:"failover"`
+	Backend      []string     `yaml:"backend"`
+	Log          LogConfig    `yaml:"log"`
+	Stats        string       `yaml:"stats"`
+	Heatch       HeatchConfig `yaml:"heatch"`
+}
+
+// HeatchConfig Type
+type HeatchConfig struct {
+	Interval    int    `yaml:"interval"`
+	Rise        int    `yaml:"rise"`
+	Fall        int    `yaml:"fall"`
+	Timeout     int    `yaml:"timeout"`
+	Type        string `yaml:"type"`
+	DefaultDown bool   `yaml:"default_down"`
 }
 
 // LogConfig Type
@@ -66,7 +77,7 @@ func parseConfigFile(filepath string) error {
 			logger.Error("mkdir failed![%s]" + err.Error())
 			return err
 		} else {
-			logger.Error("mkdir success!")
+			logger.Info("mkdir success!")
 			return nil
 		}
 	}

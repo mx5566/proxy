@@ -1,11 +1,15 @@
 package proxy
 
 import (
+	"fmt"
 	"net"
 	"time"
 
 	"stathat.com/c/consistent"
 )
+
+// 初始化全局proxy
+var proxy Proxy
 
 type Proxy struct {
 	// 后端服务器的配置
@@ -19,7 +23,8 @@ type Proxy struct {
 type BackendEnd struct {
 	svrStr    string
 	isUp      bool // is Up or Down
-	failTimes int
+	failTimes int  // 失败次数
+	riseTimes int  // 连接成功的次数
 }
 
 func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
@@ -48,7 +53,6 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 			logger.Info("conn handle ok")
 		}(conn)
 	}
-
 }
 
 func (this *Proxy) HandleConnect(conn net.Conn) {
@@ -112,18 +116,22 @@ func (this *Proxy) Copy(from net.Conn, to net.Conn, ok chan bool) {
 
 func (this *Proxy) InitBackEnd(proxyConfig *ProxyConfig) {
 	this.pConsisthash = consistent.New()
+	this.backend = make(map[string]*BackendEnd)
 
 	for _, svr := range proxyConfig.Backend {
 		// 把对应的后端服务器加入到哈希环
 		this.pConsisthash.Add(svr)
 
-		this.backend = make(map[string]*BackendEnd)
+		logger.Info(svr)
 		this.backend[svr] = &BackendEnd{
 			svrStr:    svr,
-			isUp:      true,
+			isUp:      !proxyConfig.Heatch.DefaultDown,
 			failTimes: 0,
+			riseTimes: 0,
 		}
 	}
+
+	fmt.Println(this.backend)
 }
 
 func (this *Proxy) GetBackEnd(conn net.Conn) string {
@@ -146,6 +154,10 @@ func (this *Proxy) GetBackEnd(conn net.Conn) string {
 	return svr.svrStr
 }
 
+func (this *Proxy) CheckBackEnd() {
+	go checkHeath(this.backend)
+}
+
 func CreateProxy(configPath string) {
 	//err := parseConfigFile("./config.yaml")
 	err := parseConfigFile(configPath)
@@ -157,11 +169,12 @@ func CreateProxy(configPath string) {
 	// 日志模块
 	initLog(&config.Log)
 
-	var proxy Proxy
 	// 初始化后端服务器
 	proxy.InitBackEnd(&config)
+
+	// 后端检测
+	proxy.CheckBackEnd()
 	// 初始化代理模块
 	proxy.InitProxy(&config)
 
-	// 需要状态检查服务器
 }
