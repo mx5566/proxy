@@ -1,9 +1,15 @@
 package proxy
 
 import (
-	"fmt"
 	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
+
+	"fmt"
 
 	"stathat.com/c/consistent"
 )
@@ -17,17 +23,25 @@ type Proxy struct {
 
 	// 对后端IP进行一致性哈希到环对应的位置
 	pConsisthash *consistent.Consistent
+
+	// 客户端连接池--
+	pool sync.Pool
+
+	mux *http.ServeMux
+
+	isShutdown chan bool
 }
 
 // BackendSvr Type
 type BackendEnd struct {
-	svrStr    string
-	isUp      bool // is Up or Down
-	failTimes int  // 失败次数
-	riseTimes int  // 连接成功的次数
+	SvrStr    string `json:"svrStr"`
+	IsUp      bool   `json:"isUp"`      // is Up or Down
+	FailTimes int    `json:"failTimes"` // 失败次数
+	RiseTimes int    `json:"riseTimes"` // 连接成功的次数
 }
 
 func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
+
 	// 启动代理服务器
 	listener, err := net.Listen("tcp", proxyConfig.Bind)
 	if err != nil {
@@ -36,22 +50,30 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 		return
 	}
 
+	defer listener.Close()
+
 	logger.Info("init proxy listen ok")
 
+close:
 	for {
-		// 代理服务器监听客户端的连接
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Error("accept errro " + err.Error())
-			break
-		}
+		select {
+		case <-this.isShutdown:
+			break close
+		default:
+			// 代理服务器监听客户端的连接
+			conn, err := listener.Accept()
+			if err != nil {
+				logger.Error("accept errro " + err.Error())
+				break close
+			}
 
-		// 处理客户端连接
-		go func(conn net.Conn) {
-			this.HandleConnect(conn)
-			// 连接处理完了
-			logger.Info("conn handle ok")
-		}(conn)
+			// 处理客户端连接
+			go func(conn net.Conn) {
+				this.HandleConnect(conn)
+				// 连接处理完了
+				logger.Info("conn handle ok")
+			}(conn)
+		}
 	}
 }
 
@@ -124,14 +146,12 @@ func (this *Proxy) InitBackEnd(proxyConfig *ProxyConfig) {
 
 		logger.Info(svr)
 		this.backend[svr] = &BackendEnd{
-			svrStr:    svr,
-			isUp:      !proxyConfig.Heatch.DefaultDown,
-			failTimes: 0,
-			riseTimes: 0,
+			SvrStr:    svr,
+			IsUp:      !proxyConfig.Heatch.DefaultDown,
+			FailTimes: 0,
+			RiseTimes: 0,
 		}
 	}
-
-	fmt.Println(this.backend)
 }
 
 func (this *Proxy) GetBackEnd(conn net.Conn) string {
@@ -151,11 +171,70 @@ func (this *Proxy) GetBackEnd(conn net.Conn) string {
 		return ""
 	}
 
-	return svr.svrStr
+	return svr.SvrStr
 }
 
 func (this *Proxy) CheckBackEnd() {
 	go checkHeath(this.backend)
+}
+
+// 返回的状态数据格式
+type retJson struct {
+	Data interface{} `json:"data"`
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+}
+
+func (this *Proxy) StatsBackEnd() {
+	logger.Info("start stats keep")
+
+	go func() {
+		// 初始化池子的对象构造
+		this.pool = sync.Pool{
+			New: func() interface{} {
+				return &Context{Request: nil, ResponseWriter: nil}
+			},
+		}
+		this.mux = http.NewServeMux()
+
+		// 注册处理函数
+		this.RegisterRoute("/stats", StatsHandler)
+
+		// 监听状态端口
+		_ = http.ListenAndServe(config.Stats, this.mux)
+
+	}()
+}
+
+func (this *Proxy) RegisterRoute(uri string, f func(w http.ResponseWriter, r *http.Request)) {
+	this.mux.HandleFunc(uri, f)
+}
+
+// 信号处理
+func (this *Proxy) OnSignalExit() {
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM)
+
+		logger.Info("Wait OnSignalExit")
+		sig := <-c
+
+		pid := syscall.Getpid()
+
+		for {
+			switch sig {
+			case syscall.SIGHUP:
+				logger.Info("syscall.SIGHUP")
+			case syscall.SIGINT:
+				logger.Info(string(pid) + "Received SIGINT.")
+			case syscall.SIGTERM:
+				logger.Info(string(pid) + "Received SIGTERM.")
+			default:
+				str := fmt.Sprintf("Received %s: nothing i care about", sig)
+				logger.Info(str)
+			}
+		}
+	}()
 }
 
 func CreateProxy(configPath string) {
@@ -169,11 +248,17 @@ func CreateProxy(configPath string) {
 	// 日志模块
 	initLog(&config.Log)
 
+	proxy.OnSignalExit()
+
 	// 初始化后端服务器
 	proxy.InitBackEnd(&config)
 
 	// 后端检测
 	proxy.CheckBackEnd()
+
+	// 后端服务器的状态用来显示
+	proxy.StatsBackEnd()
+
 	// 初始化代理模块
 	proxy.InitProxy(&config)
 

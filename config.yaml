@@ -21,7 +21,11 @@ heatch:
   default_down: true # 设定初始时服务器的状态，
   # 如果是true，就说明默认是down的，如果是false，就是up的。
   # 默认值是true，也就是一开始服务器认为是不可用，要等健康检查包达到一定成功次数以后才会被认为是健康的。
-  check_http_send: "GET / HTTP/1.0\r\n\r\n"
+  check_http_send: "HEAD / HTTP/1.1\r\n\r\n"
+  check_http_expect_alive:
+    - http_2xx
+    - http_3xx
+  port: 8080
 
 log:
   level: 0

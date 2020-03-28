@@ -24,12 +24,15 @@ type ProxyConfig struct {
 
 // HeatchConfig Type
 type HeatchConfig struct {
-	Interval    int    `yaml:"interval"`
-	Rise        int    `yaml:"rise"`
-	Fall        int    `yaml:"fall"`
-	Timeout     int    `yaml:"timeout"`
-	Type        string `yaml:"type"`
-	DefaultDown bool   `yaml:"default_down"`
+	Interval             int      `yaml:"interval"`
+	Rise                 int      `yaml:"rise"`
+	Fall                 int      `yaml:"fall"`
+	Timeout              int      `yaml:"timeout"`
+	Type                 string   `yaml:"type"`
+	DefaultDown          bool     `yaml:"default_down"`
+	CheckHttpSend        string   `yaml:"check_http_send"`
+	CheckHttpExceptAlive []string `yaml:"check_http_expect_alive"`
+	Port                 int      `yaml:"port"`
 }
 
 // LogConfig Type

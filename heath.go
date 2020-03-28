@@ -3,6 +3,8 @@ package proxy
 import (
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -10,6 +12,20 @@ import (
 
 // HeatchMontior
 type HeathMontior struct {
+}
+
+func (this *HeathMontior) ParseIP(port int, svrStr string) string {
+	ipPort := strings.Split(svrStr, ":")
+
+	length := len(ipPort)
+	var requestStr string
+	if length <= 0 || port == 0 {
+		requestStr = svrStr
+	} else {
+		requestStr = ipPort[0] + ":" + string(port)
+	}
+
+	return requestStr
 }
 
 // TcpCheck
@@ -20,20 +36,23 @@ func (this *HeathMontior) TcpCheck(hConfig HeatchConfig, backend map[string]*Bac
 	t := time.Tick(second)
 	for _ = range t {
 		for _, v := range backend {
-			conn, err := net.DialTimeout("tcp", v.svrStr, time.Duration(hConfig.Timeout/1000))
+			requestStr := this.ParseIP(hConfig.Port, v.SvrStr)
+
+			timeout := time.Duration(hConfig.Timeout) * time.Millisecond
+			conn, err := net.DialTimeout("tcp", requestStr, timeout)
 			if err != nil {
-				v.failTimes++
-				v.riseTimes = 0
-				if v.failTimes > hConfig.Fall {
-					v.isUp = false
+				v.FailTimes++
+				v.RiseTimes = 0
+				if v.FailTimes > hConfig.Fall {
+					v.IsUp = false
 				}
 				continue
 			}
 
-			v.riseTimes++
-			v.failTimes = 0
-			if v.riseTimes >= hConfig.Rise {
-				v.isUp = true
+			v.RiseTimes++
+			v.FailTimes = 0
+			if v.RiseTimes >= hConfig.Rise {
+				v.IsUp = true
 			}
 
 			defer conn.Close()
@@ -49,29 +68,47 @@ func (this *HeathMontior) HttpCheck(hConfig HeatchConfig, backend map[string]*Ba
 	t := time.Tick(second)
 	for _ = range t {
 		for _, v := range backend {
-			resp, err := http.Head(v.svrStr)
-			//resp, err := http.Get(v.svrStr)
+			requestStr := this.ParseIP(hConfig.Port, v.SvrStr)
+
+			resp, err := http.Head(requestStr)
 			if err != nil {
-				v.failTimes++
-				v.riseTimes = 0
-				if v.failTimes > hConfig.Fall {
-					v.isUp = false
+				v.FailTimes++
+				v.RiseTimes = 0
+				if v.FailTimes > hConfig.Fall {
+					v.IsUp = false
 				}
 				continue
 			}
 
-			v.riseTimes++
-			v.failTimes = 0
-			if v.riseTimes >= hConfig.Rise {
-				v.isUp = true
+			// 判断状态码是不是check_http_expect_alive
+			// http_2xx
+			// http_3xx
+			var find = false
+			for _, value := range hConfig.CheckHttpExceptAlive {
+				alive := "http_" + string(strconv.Itoa(resp.StatusCode)[0]) + "xx"
+				if alive == value {
+					find = true
+					break
+				}
+			}
+
+			if !find {
+				v.FailTimes++
+				v.RiseTimes = 0
+				if v.FailTimes > hConfig.Fall {
+					v.IsUp = false
+				}
+
+				continue
+			}
+
+			v.RiseTimes++
+			v.FailTimes = 0
+			if v.RiseTimes >= hConfig.Rise {
+				v.IsUp = true
 			}
 		}
 	}
-}
-
-// PortCheck
-func (this *HeathMontior) PortCheck(hConfig HeatchConfig, backend map[string]*BackendEnd) {
-
 }
 
 // checkHeath heath check
@@ -88,9 +125,6 @@ func checkHeath(backend map[string]*BackendEnd) {
 	case "http":
 		logger.Info("heatch http")
 		montior.HttpCheck(heath, backend)
-	case "port":
-		logger.Info("heatch port")
-		montior.PortCheck(heath, backend)
 	default:
 		logger.Error("not support heatch type", zap.String("heatchType", heath.Type))
 	}
