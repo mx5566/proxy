@@ -10,7 +10,6 @@ func TestProxy_InitProxy(t *testing.T) {
 	config.WaitQueueLen = 100
 	config.MaxConn = 50
 	config.Timeout = 5
-	config.FailOver = 3
 	config.Stats = "0.0.0.0:19090"
 
 	var logConfig LogConfig

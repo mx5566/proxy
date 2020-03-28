@@ -2,7 +2,6 @@ bind: 0.0.0.0:9090
 wait_queue_len: 100
 max_conn: 50
 timeout: 5
-failover: 3
 stats: 0.0.0.0:19090
 backend:
   - 127.0.0.1:83
