@@ -178,13 +178,6 @@ func (this *Proxy) CheckBackEnd() {
 	go checkHeath(this.backend)
 }
 
-// 返回的状态数据格式
-type retJson struct {
-	Data interface{} `json:"data"`
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-}
-
 func (this *Proxy) StatsBackEnd() {
 	logger.Info("start stats keep")
 
@@ -225,10 +218,15 @@ func (this *Proxy) OnSignalExit() {
 			switch sig {
 			case syscall.SIGHUP:
 				logger.Info("syscall.SIGHUP")
+				this.isShutdown <- true
+
 			case syscall.SIGINT:
 				logger.Info(string(pid) + "Received SIGINT.")
+				this.isShutdown <- true
+
 			case syscall.SIGTERM:
 				logger.Info(string(pid) + "Received SIGTERM.")
+				this.isShutdown <- true
 			default:
 				str := fmt.Sprintf("Received %s: nothing i care about", sig)
 				logger.Info(str)
