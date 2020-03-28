@@ -32,14 +32,6 @@ type Proxy struct {
 	isShutdown chan bool
 }
 
-// BackendSvr Type
-type BackendEnd struct {
-	SvrStr    string `json:"svrStr"`
-	IsUp      bool   `json:"isUp"`      // is Up or Down
-	FailTimes int    `json:"failTimes"` // 失败次数
-	RiseTimes int    `json:"riseTimes"` // 连接成功的次数
-}
-
 func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 
 	// 启动代理服务器
