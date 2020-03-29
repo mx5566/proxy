@@ -71,7 +71,7 @@ func (this *HeathMontior) HttpCheck(hConfig HeatchConfig, backend map[string]*Ba
 		for _, v := range backend {
 			requestStr := this.ParseIP(hConfig.Port, v.SvrStr)
 
-			resp, err := http.Head(requestStr)
+			resp, err := http.Head("http://" + requestStr)
 			if err != nil {
 				v.FailTimes++
 				v.RiseTimes = 0

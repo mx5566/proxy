@@ -56,10 +56,7 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 
 	// 接受关闭数据
 	go func(ln net.Listener) {
-		logger.Info("will shutdown server before")
-
 		<-this.isShutdown
-		logger.Info("will shutdown server")
 		if err = ln.Close(); err != nil {
 			logger.Error(err.Error())
 		}
