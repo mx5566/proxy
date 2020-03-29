@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -22,7 +23,7 @@ func (this *HeathMontior) ParseIP(port int, svrStr string) string {
 	if length <= 0 || port == 0 {
 		requestStr = svrStr
 	} else {
-		requestStr = ipPort[0] + ":" + string(port)
+		requestStr = fmt.Sprintf("%s:%d", ipPort[0], port)
 	}
 
 	return requestStr
