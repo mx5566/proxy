@@ -75,12 +75,6 @@ close:
 		}
 
 		waitQueue <- conn
-		// 处理客户端连接
-		//go func(conn net.Conn) {
-		//	this.HandleConnect(conn)
-		//	// 连接处理完了
-		//	logger.Info("conn handle ok")
-		//}(conn)
 	}
 }
 
@@ -137,14 +131,14 @@ func (this *Proxy) Copy(from net.Conn, to net.Conn, ok chan bool) {
 	for {
 		select {
 		default:
-			_ = from.SetReadDeadline(time.Now().Add(time.Duration(config.Timeout) * time.Second))
+			_ = from.SetReadDeadline(time.Now().Add(time.Duration(config.Heatch.Timeout) * time.Millisecond))
 			read, err = from.Read(bytes)
 			if err != nil {
 				ok <- true
 				return
 			}
 
-			_ = to.SetWriteDeadline(time.Now().Add(time.Duration(config.Timeout) * time.Second))
+			_ = to.SetWriteDeadline(time.Now().Add(time.Duration(config.Heatch.Timeout) * time.Millisecond))
 			_, err = to.Write(bytes[:read])
 			if err != nil {
 				ok <- true
@@ -223,6 +217,7 @@ func (this *Proxy) RegisterRoute(uri string, f func(w http.ResponseWriter, r *ht
 
 // 信号处理
 func (this *Proxy) OnSignalExit() {
+	// 初始化管道
 	this.isShutdown = make(chan bool, 1)
 
 	go func() {
@@ -234,6 +229,7 @@ func (this *Proxy) OnSignalExit() {
 
 		pid := syscall.Getpid()
 
+		// 通知主线程关闭服务器
 		switch sig {
 		case syscall.SIGHUP:
 			logger.Info("syscall.SIGHUP")
