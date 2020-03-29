@@ -1,6 +1,6 @@
 bind: 0.0.0.0:9090
 wait_queue_len: 100
-max_conn: 50
+max_conn: 50000
 timeout: 5
 stats: 0.0.0.0:19090
 backend:

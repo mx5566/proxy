@@ -46,26 +46,52 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 
 	logger.Info("init proxy listen ok")
 
+	waitQueue := make(chan net.Conn, config.WaitQueueLen)
+	availPools := make(chan bool, config.MaxConn)
+	for i := 0; i < config.MaxConn; i++ {
+		availPools <- true
+	}
+
+	go this.loop(waitQueue, availPools)
+
+	// 接受关闭数据
+	go func(ln net.Listener) {
+		logger.Info("will shutdown server before")
+
+		<-this.isShutdown
+		logger.Info("will shutdown server")
+		if err = ln.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}(listener)
+
 close:
 	for {
-		select {
-		case <-this.isShutdown:
+		// 代理服务器监听客户端的连接
+		conn, err := listener.Accept()
+		if err != nil {
+			logger.Error("accept errro " + err.Error())
 			break close
-		default:
-			// 代理服务器监听客户端的连接
-			conn, err := listener.Accept()
-			if err != nil {
-				logger.Error("accept errro " + err.Error())
-				break close
-			}
-
-			// 处理客户端连接
-			go func(conn net.Conn) {
-				this.HandleConnect(conn)
-				// 连接处理完了
-				logger.Info("conn handle ok")
-			}(conn)
 		}
+
+		waitQueue <- conn
+		// 处理客户端连接
+		//go func(conn net.Conn) {
+		//	this.HandleConnect(conn)
+		//	// 连接处理完了
+		//	logger.Info("conn handle ok")
+		//}(conn)
+	}
+}
+
+func (this *Proxy) loop(waitQueue chan net.Conn, availPools chan bool) {
+	for connection := range waitQueue {
+		<-availPools
+		go func(connection net.Conn) {
+			this.HandleConnect(connection)
+			availPools <- true
+			logger.Info("conn handle ok")
+		}(connection)
 	}
 }
 
@@ -197,6 +223,8 @@ func (this *Proxy) RegisterRoute(uri string, f func(w http.ResponseWriter, r *ht
 
 // 信号处理
 func (this *Proxy) OnSignalExit() {
+	this.isShutdown = make(chan bool, 1)
+
 	go func() {
 		c := make(chan os.Signal)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGHUP, syscall.SIGTERM)
@@ -206,24 +234,24 @@ func (this *Proxy) OnSignalExit() {
 
 		pid := syscall.Getpid()
 
-		for {
-			switch sig {
-			case syscall.SIGHUP:
-				logger.Info("syscall.SIGHUP")
-				this.isShutdown <- true
+		switch sig {
+		case syscall.SIGHUP:
+			logger.Info("syscall.SIGHUP")
+			this.isShutdown <- true
 
-			case syscall.SIGINT:
-				logger.Info(string(pid) + "Received SIGINT.")
-				this.isShutdown <- true
+		case syscall.SIGINT:
+			str := fmt.Sprintf("%d ", pid)
+			logger.Info(str + "Received SIGINT.")
+			this.isShutdown <- true
 
-			case syscall.SIGTERM:
-				logger.Info(string(pid) + "Received SIGTERM.")
-				this.isShutdown <- true
-			default:
-				str := fmt.Sprintf("Received %s: nothing i care about", sig)
-				logger.Info(str)
-			}
+		case syscall.SIGTERM:
+			logger.Info(string(pid) + "Received SIGTERM.")
+			this.isShutdown <- true
+		default:
+			str := fmt.Sprintf("Received %s: nothing i care about", sig)
+			logger.Info(str)
 		}
+
 	}()
 }
 
@@ -238,8 +266,6 @@ func CreateProxy(configPath string) {
 	// 日志模块
 	initLog(&config.Log)
 
-	proxy.OnSignalExit()
-
 	// 初始化后端服务器
 	proxy.InitBackEnd(&config)
 
@@ -248,6 +274,8 @@ func CreateProxy(configPath string) {
 
 	// 后端服务器的状态用来显示
 	proxy.StatsBackEnd()
+
+	proxy.OnSignalExit()
 
 	// 初始化代理模块
 	proxy.InitProxy(&config)
