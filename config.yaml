@@ -1,7 +1,5 @@
 bind: 0.0.0.0:9090
-wait_queue_len: 100
-max_conn: 50000
-timeout: 5
+
 stats: 0.0.0.0:19090
 backend:
   - 127.0.0.1:8080
@@ -29,8 +27,15 @@ heatch:
 log:
   level: 0
   path: "./logs/tcpProxy.log"
-  max_size: 10
+  max_size: 5
   max_backup: 10
   max_age: 7
   compress: true
   servicename: tcpProxy
+limiter:
+  type: 1
+  # queueLimter  LimitType = iota + 1 // 队列模式限流
+  #	bucketLimter                      // golang官方库  golang.org/x/time/rate  bucket
+  #	slideWindow                       // 滑动窗口限流器 tcp滑动窗口
+  wait_queue_len: 100
+  max_conn: 50000

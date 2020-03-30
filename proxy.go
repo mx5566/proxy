@@ -30,6 +30,8 @@ type Proxy struct {
 	mux *http.ServeMux
 
 	isShutdown chan bool
+
+	limiter LimitInterface
 }
 
 func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
@@ -46,21 +48,17 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 
 	logger.Info("init proxy listen ok")
 
-	waitQueue := make(chan net.Conn, config.WaitQueueLen)
-	availPools := make(chan bool, config.MaxConn)
-	for i := 0; i < config.MaxConn; i++ {
-		availPools <- true
+	// 接受关闭数据 1
+	this.onSignalClose(listener)
+
+	// 创建限流器 2
+	this.limiter = NewQueueLimter(proxyConfig.Limter.WaitQueueLen, proxyConfig.Limter.MaxConn)
+	if this.limiter == nil {
+		return
 	}
 
-	go this.loop(waitQueue, availPools)
-
-	// 接受关闭数据
-	go func(ln net.Listener) {
-		<-this.isShutdown
-		if err = ln.Close(); err != nil {
-			logger.Error(err.Error())
-		}
-	}(listener)
+	// 启动限流器处理流程
+	this.limiter.Run(this.HandleConnect)
 
 close:
 	for {
@@ -71,27 +69,34 @@ close:
 			break close
 		}
 
-		waitQueue <- conn
+		// 限流器连接添加 3
+		if this.limiter.IsAvalivale() {
+			this.limiter.SetWaitQueue(conn)
+		} else {
+			_, _ = conn.Write([]byte("server full"))
+			conn.Close()
+		}
+
 	}
 }
 
-func (this *Proxy) loop(waitQueue chan net.Conn, availPools chan bool) {
-	for connection := range waitQueue {
-		<-availPools
-		go func(connection net.Conn) {
-			this.HandleConnect(connection)
-			availPools <- true
-			logger.Info("conn handle ok")
-		}(connection)
-	}
+func (this *Proxy) onSignalClose(listener net.Listener) {
+	go func(ln net.Listener) {
+		<-this.isShutdown
+		if err := ln.Close(); err != nil {
+			logger.Error(err.Error())
+		}
+	}(listener)
 }
 
-func (this *Proxy) HandleConnect(conn net.Conn) {
-	defer conn.Close()
+func (this *Proxy) HandleConnect(conn interface{}) {
+	connTemp := conn.(net.Conn)
+
+	defer connTemp.Close()
 
 	// 把客户端的连接转发给后端服务器
 	// 获取一个后端服务器
-	server := this.GetBackEnd(conn)
+	server := this.GetBackEnd(connTemp)
 	if server == "" {
 		return
 	}
@@ -108,9 +113,9 @@ func (this *Proxy) HandleConnect(conn net.Conn) {
 
 	ok = make(chan bool, 2)
 	// 把客户端的数据-写到服务器端
-	go this.Copy(conn, serverSession, ok)
+	go this.Copy(connTemp, serverSession, ok)
 	// 把服务器端的数据写到客户端
-	go this.Copy(serverSession, conn, ok)
+	go this.Copy(serverSession, connTemp, ok)
 
 	// 通过管道控制
 	<-ok

@@ -11,13 +11,12 @@ var config ProxyConfig
 
 // ProxyConfig Type
 type ProxyConfig struct {
-	Bind         string       `yaml:"bind"`
-	WaitQueueLen int          `yaml:"wait_queue_len"`
-	MaxConn      int          `yaml:"max_conn"`
-	Backend      []string     `yaml:"backend"`
-	Log          LogConfig    `yaml:"log"`
-	Stats        string       `yaml:"stats"`
-	Heatch       HeatchConfig `yaml:"heatch"`
+	Bind    string        `yaml:"bind"`
+	Backend []string      `yaml:"backend"`
+	Log     LogConfig     `yaml:"log"`
+	Stats   string        `yaml:"stats"`
+	Heatch  HeatchConfig  `yaml:"heatch"`
+	Limter  LimiterConfig `yaml:"limter"`
 }
 
 // HeatchConfig Type
@@ -42,6 +41,14 @@ type LogConfig struct {
 	MaxAge      int    `yaml:"max_age"`
 	Compress    bool   `yaml:"compress"`
 	ServiceName string `yaml:"servicename"`
+}
+
+//
+type LimiterConfig struct {
+	Open         bool `yaml:"open"`
+	Type         int  `yaml:"type"`
+	WaitQueueLen int  `yaml:"wait_queue_len"`
+	MaxConn      int  `yaml:"max_conn"`
 }
 
 // pathExists

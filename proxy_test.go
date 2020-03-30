@@ -7,8 +7,6 @@ import (
 func TestProxy_InitProxy(t *testing.T) {
 	var config ProxyConfig
 	config.Bind = "0.0.0.0:9999"
-	config.WaitQueueLen = 100
-	config.MaxConn = 50
 	config.Stats = "0.0.0.0:19090"
 
 	var logConfig LogConfig
