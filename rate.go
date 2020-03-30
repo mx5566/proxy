@@ -1,23 +1,32 @@
 package proxy
 
+import (
+	"time"
+
+	"context"
+
+	"golang.org/x/time/rate"
+)
+
 type LimitType int
 
 const (
-	queueLimter  LimitType = iota + 1 // 队列模式限流
-	bucketLimter                      // golang官方库  golang.org/x/time/rate  bucket
-	slideWindow                       // 滑动窗口限流器 tcp滑动窗口
+	queueLimter        LimitType = iota + 1 // 队列模式限流
+	tokenBucketLimter                       // golang官方库  golang.org/x/time/rate  bucket
+	slideWindowLimiter                      // 滑动窗口限流器 tcp滑动窗口
+	leakBucketLimter                        // 漏斗桶限流器
 )
 
 // 限流接口
 type LimitInterface interface {
 	IsAvalivale() bool
-	Run(handler func(conn interface{}))
+	Bind(handler func(conn interface{}))
 	SetWaitQueue(conn interface{})
 }
 
-///////////////////////////////QueueLimit/////////////////////////////
+///////////////////////////////QueueLimiter/////////////////////////////
 // 通过队列实现限流
-type QueueLimit struct {
+type QueueLimiter struct {
 	waitQueue        chan interface{} // 等待队列类似c网络 listen的backlog
 	availPools       chan bool        // 并发连接数
 	initWaitQueueLen int
@@ -30,8 +39,8 @@ type QueueLimit struct {
 	maxConn-最大的并发处理长度
 
 **/
-func NewQueueLimter(waitLength, maxConn int) *QueueLimit {
-	limiter := &QueueLimit{
+func NewQueueLimter(waitLength, maxConn int) *QueueLimiter {
+	limiter := &QueueLimiter{
 		waitQueue:        make(chan interface{}, waitLength),
 		availPools:       make(chan bool, maxConn),
 		initWaitQueueLen: waitLength,
@@ -47,7 +56,7 @@ func NewQueueLimter(waitLength, maxConn int) *QueueLimit {
 }
 
 // 等待队列是否还有空位
-func (this QueueLimit) IsAvalivale() bool {
+func (this QueueLimiter) IsAvalivale() bool {
 	length := len(this.waitQueue)
 
 	// 超过了等待队列的数量 说明超过了最大并发持续进行中
@@ -59,11 +68,11 @@ func (this QueueLimit) IsAvalivale() bool {
 }
 
 // 限流器增加计数
-func (this *QueueLimit) SetWaitQueue(conn interface{}) {
+func (this *QueueLimiter) SetWaitQueue(conn interface{}) {
 	this.waitQueue <- conn
 }
 
-func (this QueueLimit) Run(handler func(conn interface{})) {
+func (this QueueLimiter) Bind(handler func(conn interface{})) {
 	go func() {
 		for connection := range this.waitQueue {
 			<-this.availPools
@@ -74,7 +83,67 @@ func (this QueueLimit) Run(handler func(conn interface{})) {
 			}(connection)
 		}
 	}()
-
 }
 
-///////////////////////////////QueueLimit/////////////////////////////
+///////////////////////////////QueueLimiter/////////////////////////////
+
+//////////////////////////////TokenBucketLimiter/////////////////////////////
+
+// 令牌桶实现限流
+type TokenBucketLimiter struct {
+	limiter *rate.Limiter // 令牌桶算法类
+	handler func(conn interface{})
+}
+
+func NewTokenBucketLimiter(r rate.Limit, token int) *TokenBucketLimiter {
+	// 800ms
+	limit := rate.Every(time.Duration(800) * time.Millisecond)
+
+	bucket := &TokenBucketLimiter{limiter: rate.NewLimiter(limit, 1)}
+	return bucket
+}
+
+func (this *TokenBucketLimiter) IsAvalivale() bool {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// 取消cancel
+	defer cancel()
+
+	if err := this.limiter.Wait(ctx); err != nil {
+		logger.Panic(err.Error())
+	}
+
+	return true
+}
+
+//
+// bind handler function to  handler
+func (this *TokenBucketLimiter) Bind(handler func(conn interface{})) {
+	// TODO:
+	// None
+	this.handler = handler
+}
+
+// call handler function by conn
+func (this *TokenBucketLimiter) SetWaitQueue(conn interface{}) {
+	// TODO:
+	// None
+	go func(connection interface{}) {
+		this.handler(connection)
+		logger.Info("conn handle ok on BucketLimiter")
+
+	}(conn)
+}
+
+//////////////////////////////TokenBucketLimiter/////////////////////////////
+
+//////////////////////////////LeakBucketLimiter/////////////////////////////
+// 漏斗桶限流算法
+type LeakBucketLimiter struct {
+}
+
+//////////////////////////////LeakBucketLimiter/////////////////////////////
+
+func CreateLimiter(t int, options ...int) {
+
+}

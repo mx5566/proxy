@@ -58,7 +58,7 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 	}
 
 	// 启动限流器处理流程
-	this.limiter.Run(this.HandleConnect)
+	this.limiter.Bind(this.HandleConnect)
 
 close:
 	for {
@@ -76,7 +76,6 @@ close:
 			_, _ = conn.Write([]byte("server full"))
 			conn.Close()
 		}
-
 	}
 }
 
