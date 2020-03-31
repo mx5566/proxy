@@ -3,6 +3,8 @@ package proxy
 import (
 	"time"
 
+	"github.com/mx5566/proxy/leakybucket"
+
 	"context"
 
 	"golang.org/x/time/rate"
@@ -95,9 +97,9 @@ type TokenBucketLimiter struct {
 	handler func(conn interface{})
 }
 
-func NewTokenBucketLimiter(r rate.Limit, token int) *TokenBucketLimiter {
+func NewTokenBucketLimiter(t int, token int) *TokenBucketLimiter {
 	// 800ms
-	limit := rate.Every(time.Duration(800) * time.Millisecond)
+	limit := rate.Every(time.Duration(t) * time.Millisecond)
 
 	bucket := &TokenBucketLimiter{limiter: rate.NewLimiter(limit, 1)}
 	return bucket
@@ -140,10 +142,46 @@ func (this *TokenBucketLimiter) SetWaitQueue(conn interface{}) {
 //////////////////////////////LeakBucketLimiter/////////////////////////////
 // 漏斗桶限流算法
 type LeakBucketLimiter struct {
+	limiter leakybucket.BucketI
+	handler func(conn interface{})
+}
+
+func NewLeakBucketLimiter(name string, cap uint, t int) *LeakBucketLimiter {
+	bucketI, _ := leakybucket.New().Create(name, cap, time.Duration(t)*time.Millisecond)
+
+	limit := &LeakBucketLimiter{limiter: bucketI}
+
+	return limit
+}
+
+func (this *LeakBucketLimiter) IsAvalivale() bool {
+	if _, err := this.limiter.Add(1); err != nil {
+		return false
+	}
+
+	return true
+}
+
+//
+// bind handler function to  handler
+func (this *LeakBucketLimiter) Bind(handler func(conn interface{})) {
+	// TODO:
+	// None
+	this.handler = handler
+}
+
+// call handler function by conn
+func (this *LeakBucketLimiter) SetWaitQueue(conn interface{}) {
+	// TODO:
+	// None
+	go func(connection interface{}) {
+		this.handler(connection)
+		logger.Info("conn handle ok on BucketLimiter")
+	}(conn)
 }
 
 //////////////////////////////LeakBucketLimiter/////////////////////////////
 
-func CreateLimiter(t int, options ...int) {
+func CreateLimiter(options ...int) {
 
 }
