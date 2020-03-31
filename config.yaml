@@ -39,6 +39,8 @@ limiter:
   #	slideWindow                       // 滑动窗口限流器 tcp滑动窗口
   wait_queue_len: 100
   max_conn: 50000
-  duration: 8  # 单位毫秒--
+  duration: 8  # 单位毫秒--速率
   # 对于令牌桶表示加入令牌的速率
   # 对于漏斗桶表示桶漏水的速率
+  captity: 100 # 容量
+  name: "Test" # 限流器名字

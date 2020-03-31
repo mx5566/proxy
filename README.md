@@ -24,6 +24,47 @@ const (
 	leakBucketLimter                        // 漏斗桶限流器
 )
 
+
+
+1对于队列模式queueLimter
+采用的是二级模式
+配置文件中
+  wait_queue_len: 100 # 代表可以处于等待处理的队列
+  max_conn: 50000 # 代表同时处于处理的连接 并发的用户
+
+函数分为三步
+-- NewQueueLimter(wait_queue_len, max_conn)
+-- Bind(handler func(conn interface{}))
+-- 		if this.limiter.IsAvalivale() {
+   			this.limiter.SetWaitQueue(conn)
+   		} 
+
+
+
+2 tokenBucketLimter
+  duration: 8  # 单位毫秒--速率
+  captity: 100 # 容量
+函数分为三步
+-- NewTokenBucketLimiter(duration, captity)
+-- Bind(handler func(conn interface{}))
+-- 		if this.limiter.IsAvalivale() {
+   			this.limiter.SetWaitQueue(conn)
+   		} 
+
+3 LeakBucketLimiter
+  duration: 8  # 单位毫秒--速率
+  captity: 100 # 容量
+  name: "Test" # 限流器名字
+
+函数分为三步
+-- NewLeakBucketLimiter(name, captity, duration)
+-- Bind(handler func(conn interface{}))
+-- 		if this.limiter.IsAvalivale() {
+   			this.limiter.SetWaitQueue(conn)
+   		} 
+
+
+
 ```
 
 例子直接通过调用下面的函数就可以
