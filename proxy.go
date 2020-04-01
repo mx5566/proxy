@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -18,20 +17,18 @@ import (
 var proxy Proxy
 
 type Proxy struct {
-	// 后端服务器的配置
-	backend map[string]*BackendEnd
 
-	// 对后端IP进行一致性哈希到环对应的位置
-	pConsisthash *consistent.Consistent
-
-	// 客户端连接池--
-	pool sync.Pool
-
-	mux *http.ServeMux
-
+	// 服务器关闭管道
 	isShutdown chan bool
 
+	// 限流器
 	limiter LimitInterface
+
+	// 负载均衡器
+	banlance Banlance
+
+	// 服务器查看接口
+	stat Stat
 }
 
 func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
@@ -96,7 +93,7 @@ func (this *Proxy) HandleConnect(conn interface{}) {
 
 	// 把客户端的连接转发给后端服务器
 	// 获取一个后端服务器
-	server := this.GetBackEnd(connTemp)
+	server := this.banlance.GetBackEndServer(connTemp)
 	if server == "" {
 		return
 	}
@@ -150,71 +147,24 @@ func (this *Proxy) Copy(from net.Conn, to net.Conn, ok chan bool) {
 	}
 }
 
-func (this *Proxy) InitBackEnd(proxyConfig *ProxyConfig) {
-	this.pConsisthash = consistent.New()
-	this.backend = make(map[string]*BackendEnd)
-
-	for _, svr := range proxyConfig.Backend {
-		// 把对应的后端服务器加入到哈希环
-		this.pConsisthash.Add(svr)
-
-		logger.Info(svr)
-		this.backend[svr] = &BackendEnd{
-			SvrStr:    svr,
-			IsUp:      !proxyConfig.Heatch.DefaultDown,
-			FailTimes: 0,
-			RiseTimes: 0,
-		}
-	}
-}
-
-func (this *Proxy) GetBackEnd(conn net.Conn) string {
-	// 127.0.0.1:80
-	clientIp := conn.RemoteAddr().String()
-
-	// 从哈希环获取对应的哈希值也就是存入的Ip地址
-	server, err := this.pConsisthash.Get(clientIp)
-
-	if err != nil {
-		return ""
+func (this *Proxy) StartBanlance(proxyConfig *ProxyConfig) {
+	this.banlance = Banlance{
+		backend:      make(map[string]*BackendEnd),
+		pConsisthash: consistent.New(),
 	}
 
-	svr, ok := this.backend[server]
-
-	if !ok {
-		return ""
-	}
-
-	return svr.SvrStr
+	// 初始化负载均衡对象
+	this.banlance.Init(proxyConfig.Backend, proxyConfig.Heatch)
+	// 健康检查
+	go checkHeath(this.banlance.backend)
 }
 
-func (this *Proxy) CheckBackEnd() {
-	go checkHeath(this.backend)
-}
+func (this *Proxy) StartStat() {
+	// 创建状态类
+	this.stat = Stat{mux: http.NewServeMux()}
 
-func (this *Proxy) StatsBackEnd() {
-	logger.Info("start stats keep")
-
-	go func() {
-		// 初始化池子的对象构造
-		this.pool = sync.Pool{
-			New: func() interface{} {
-				return &Context{Request: nil, ResponseWriter: nil}
-			},
-		}
-		this.mux = http.NewServeMux()
-
-		// 注册处理函数
-		this.RegisterRoute("/stats", StatsHandler)
-
-		// 监听状态端口
-		_ = http.ListenAndServe(config.Stats, this.mux)
-
-	}()
-}
-
-func (this *Proxy) RegisterRoute(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	this.mux.HandleFunc(uri, f)
+	// 启动启动函数
+	go this.stat.StartStat()
 }
 
 // 信号处理
@@ -265,13 +215,10 @@ func CreateProxy(configPath string) {
 	initLog(&config.Log)
 
 	// 初始化后端服务器
-	proxy.InitBackEnd(&config)
-
-	// 后端检测
-	proxy.CheckBackEnd()
+	proxy.StartBanlance(&config)
 
 	// 后端服务器的状态用来显示
-	proxy.StatsBackEnd()
+	proxy.StartStat()
 
 	proxy.OnSignalExit()
 

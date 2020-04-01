@@ -14,3 +14,8 @@ type BackendEnd struct {
 	FailTimes int    `json:"failTimes"` // 失败次数
 	RiseTimes int    `json:"riseTimes"` // 连接成功的次数
 }
+
+type BackStats struct {
+	IsUp   bool // is Up or Down
+	SvrStr string
+}
