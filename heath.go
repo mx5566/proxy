@@ -47,7 +47,6 @@ func (this *HeathMontior) TcpCheck(hConfig HeatchConfig, backend map[string]*Bac
 				})
 			}
 
-			beforeStats := v.IsUp
 			requestStr := this.ParseIP(hConfig.Port, v.SvrStr)
 
 			timeout := time.Duration(hConfig.Timeout) * time.Millisecond
@@ -99,7 +98,6 @@ func (this *HeathMontior) HttpCheck(hConfig HeatchConfig, backend map[string]*Ba
 				})
 			}
 
-			beforeStats := v.IsUp
 			requestStr := this.ParseIP(hConfig.Port, v.SvrStr)
 			resp, err := http.Head("http://" + requestStr)
 			if err != nil {
