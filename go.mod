@@ -6,6 +6,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	go.uber.org/zap v1.14.1
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
+	golang.org/x/tools v0.0.0-20191029190741-b9c20aec41a5
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 	launchpad.net/goyaml v0.0.0-20140305200416-000000000051

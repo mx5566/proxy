@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -16,7 +17,7 @@ type ProxyConfig struct {
 	Log     LogConfig     `yaml:"log"`
 	Stats   string        `yaml:"stats"`
 	Heatch  HeatchConfig  `yaml:"heatch"`
-	Limter  LimiterConfig `yaml:"limter"`
+	Limter  LimiterConfig `yaml:"limiter"`
 }
 
 // HeatchConfig Type
@@ -45,10 +46,12 @@ type LogConfig struct {
 
 //
 type LimiterConfig struct {
-	Open         bool `yaml:"open"`
-	Type         int  `yaml:"type"`
-	WaitQueueLen int  `yaml:"wait_queue_len"`
-	MaxConn      int  `yaml:"max_conn"`
+	Type         int    `yaml:"type"`
+	WaitQueueLen int    `yaml:"wait_queue_len"`
+	MaxConn      int    `yaml:"max_conn"`
+	Duration     int    `yaml:"duration"`
+	Captity      int    `yaml:"captity"`
+	Name         string `yaml:"name"`
 }
 
 // pathExists
@@ -76,6 +79,9 @@ func parseConfigFile(filepath string) error {
 		} else {
 			return err
 		}
+
+		fmt.Println(config)
+
 		return nil
 	}
 

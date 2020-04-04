@@ -81,7 +81,7 @@ func (this QueueLimiter) Bind(handler func(conn interface{})) {
 			go func(connection interface{}) {
 				handler(connection)
 				this.availPools <- true
-				logger.Info("conn handle ok on QueueLimiter")
+				//logger.Info("conn handle ok on QueueLimiter")
 			}(connection)
 		}
 	}()
