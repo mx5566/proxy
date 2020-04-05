@@ -10,10 +10,15 @@
  * @Date: 2020/4/5 15:46
  */
 
-package example
+package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/mx5566/proxy"
+)
 
 func main() {
 	fmt.Print("HelloWorld")
+	proxy.CreateProxy("../config.yaml")
 }
