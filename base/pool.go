@@ -32,8 +32,8 @@ func init() {
 	JobQueue = make(chan Job)
 }
 
-func NewWorker(workerPool chan chan Job) Worker {
-	return Worker{
+func NewWorker(workerPool chan chan Job) *Worker {
+	return &Worker{
 		WorkerPool: workerPool,
 		JobChannel: make(chan Job),
 		quit:       make(chan bool)}
@@ -41,7 +41,7 @@ func NewWorker(workerPool chan chan Job) Worker {
 
 // Start method starts the run loop for the worker, listening for a quit channel in
 // case we need to stop it
-func (w Worker) Start() {
+func (w *Worker) Start() {
 	go func() {
 		for {
 			// register the current worker into the worker queue.
@@ -50,7 +50,7 @@ func (w Worker) Start() {
 			select {
 			case job := <-w.JobChannel:
 				if err := job.Do(); err != nil {
-					fmt.Println("excute job failed with err: %v", err)
+					fmt.Println("excute job failed with err: ", err)
 				}
 			case <-w.quit:
 				// we have received a signal to stop
@@ -77,7 +77,7 @@ type Dispatcher struct {
 
 func NewDispatcher(maxWorkers int) *Dispatcher {
 	pool := make(chan chan Job, maxWorkers)
-	return &Dispatcher{WorkerPool: pool}
+	return &Dispatcher{WorkerPool: pool, maxWorkers: maxWorkers}
 }
 
 func (d *Dispatcher) Run() {
