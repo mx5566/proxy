@@ -50,7 +50,7 @@ type LimiterConfig struct {
 	WaitQueueLen int    `yaml:"wait_queue_len"`
 	MaxConn      int    `yaml:"max_conn"`
 	Duration     int    `yaml:"duration"`
-	Captity      int    `yaml:"captity"`
+	Captity      uint   `yaml:"captity"`
 	Name         string `yaml:"name"`
 }
 

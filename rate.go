@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/mx5566/proxy/leakybucket"
@@ -101,7 +102,7 @@ func NewTokenBucketLimiter(t int, token int) *TokenBucketLimiter {
 	// 800ms
 	limit := rate.Every(time.Duration(t) * time.Millisecond)
 
-	bucket := &TokenBucketLimiter{limiter: rate.NewLimiter(limit, 1)}
+	bucket := &TokenBucketLimiter{limiter: rate.NewLimiter(limit, token)}
 	return bucket
 }
 
@@ -182,6 +183,25 @@ func (this *LeakBucketLimiter) SetWaitQueue(conn interface{}) {
 
 //////////////////////////////LeakBucketLimiter/////////////////////////////
 
-func CreateLimiter(options ...int) {
+func CreateLimiter(lConfig LimiterConfig) LimitInterface {
+	t := LimitType(lConfig.Type)
+	var limiter LimitInterface
+	switch t {
+	case queueLimter:
+		logger.Info("queueLimter")
+		limiter = NewQueueLimter(lConfig.WaitQueueLen, lConfig.MaxConn)
+	case tokenBucketLimter:
+		logger.Info("tokenBucketLimter")
+		limiter = NewTokenBucketLimiter(lConfig.Duration, int(lConfig.Captity))
+	case leakBucketLimter:
+		logger.Info("leakBucketLimter")
+		limiter = NewLeakBucketLimiter(lConfig.Name, lConfig.Captity, lConfig.Duration)
+	case slideWindowLimiter:
+		logger.Info("slideWindowLimiter not has")
+	default:
+		str := fmt.Sprintf("Error Type %d", t)
+		logger.Error(str)
+	}
 
+	return limiter
 }

@@ -49,7 +49,7 @@ func (this *Proxy) InitProxy(proxyConfig *ProxyConfig) {
 	this.onSignalClose(listener)
 
 	// 创建限流器 2
-	this.limiter = NewQueueLimter(proxyConfig.Limter.WaitQueueLen, proxyConfig.Limter.MaxConn)
+	this.limiter = CreateLimiter(proxyConfig.Limter) //NewQueueLimter(proxyConfig.Limter.WaitQueueLen, proxyConfig.Limter.MaxConn)
 	if this.limiter == nil {
 		return
 	}
