@@ -183,6 +183,7 @@ func (this *LeakBucketLimiter) SetWaitQueue(conn interface{}) {
 
 //////////////////////////////LeakBucketLimiter/////////////////////////////
 
+// 不同的限流器的初始化接口
 func CreateLimiter(lConfig LimiterConfig) LimitInterface {
 	t := LimitType(lConfig.Type)
 	var limiter LimitInterface
