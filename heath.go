@@ -141,6 +141,8 @@ func (this *HeathMontior) HttpCheck(hConfig HeatchConfig, backend map[string]*Ba
 			}
 
 		}
+
+		proxy.banlance.ServiceGovernance(stats)
 	}
 }
 
